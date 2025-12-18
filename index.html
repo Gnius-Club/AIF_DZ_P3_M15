@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Clínica de los Sentimientos: Doctor del Corazón</title>
+    <style>
+        /* --- ESTILOS GENERALES Y VARIABLES (UX INFANTIL) --- */
+        :root {
+            --bg-color: #E0F7FA; /* Celeste pastel */
+            --card-bg: #FFFFFF;
+            --btn-datos: #607D8B; /* Gris azulado */
+            --btn-datos-hover: #455A64;
+            --btn-heart: #F06292; /* Rosa chicle */
+            --btn-heart-hover: #D81B60;
+            --text-color: #37474F;
+            --accent-green: #AED581; /* Menta */
+            --font-main: 'Verdana', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none; /* Evita selección de texto accidental */
+        }
+
+        #game-container {
+            background-color: var(--card-bg);
+            width: 90%;
+            max-width: 500px;
+            height: 90vh;
+            max-height: 800px;
+            border-radius: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 5px solid #B2EBF2;
+        }
+
+        /* --- PANTALLAS (INTRO, JUEGO, VICTORIA) --- */
+        .screen {
+            flex: 1;
+            display: none; /* Oculto por defecto */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* --- ZONA 1: BURBUJA DE PENSAMIENTO (TOP) --- */
+        .thought-bubble {
+            background: #FFF9C4; /* Amarillo pastel */
+            padding: 20px;
+            border-radius: 20px;
+            position: relative;
+            margin-bottom: 20px;
+            border: 2px solid #FFF176;
+            width: 80%;
+            font-size: 1.1rem;
+            line-height: 1.4;
+        }
+
+        .thought-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            margin-left: -15px;
+            border-width: 15px 15px 0;
+            border-style: solid;
+            border-color: #FFF9C4 transparent;
+            display: block;
+            width: 0;
+        }
+
+        /* --- ZONA 2: PACIENTE (CENTRO) --- */
+        .patient-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .emoji-avatar {
+            font-size: 8rem;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: default;
+        }
+
+        .patient-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #78909C;
+            margin-top: 10px;
+        }
+
+        /* FEEDBACK BOX (Aparece tras elegir) */
+        #feedback-box {
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #F5F5F5;
+            width: 90%;
+            font-size: 1rem;
+            display: none; /* Oculto al inicio */
+            border-left: 5px solid gray;
+        }
+
+        /* --- ZONA 3: MALETÍN DEL DOCTOR (ABAJO) --- */
+        .doctor-bag {
+            width: 100%;
+            padding: 20px 0;
+            background-color: #F1F8E9;
+            border-radius: 25px 25px 0 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            border-top: 3px solid #DCEDC8;
+        }
+
+        .tools-container {
+            display: flex;
+            gap: 15px;
+            width: 90%;
+            justify-content: center;
+        }
+
+        .tool-btn {
+            flex: 1;
+            padding: 15px 10px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+
+        .tool-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+
+        .btn-datos { background-color: var(--btn-datos); }
+        .btn-heart { background-color: var(--btn-heart); }
+
+        .btn-icon { font-size: 2rem; margin-bottom: 5px; }
+
+        /* BOTONES DE FLUJO (Siguiente / Reintentar) */
+        .action-btn {
+            padding: 12px 30px;
+            border-radius: 50px;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: bold;
+            display: none; /* Oculto hasta que se responde */
+            color: white;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-next { background-color: var(--accent-green); }
+        .btn-retry { background-color: #FF8A65; }
+
+        /* PANTALLA INTRO Y VICTORIA */
+        .big-title { font-size: 1.8rem; color: #00838F; margin-bottom: 20px; }
+        .intro-text { font-size: 1.1rem; margin-bottom: 30px; }
+        .start-btn { 
+            background-color: var(--btn-heart); color: white; 
+            padding: 15px 40px; border-radius: 50px; border: none; font-size: 1.2rem; cursor: pointer;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+        }
+        
+        .diploma {
+            border: 10px double #FFD54F;
+            padding: 20px;
+            background: white;
+            margin-bottom: 20px;
+        }
+
+        /* ANIMACIONES */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-20px);}
+            60% {transform: translateY(-10px);}
+        }
+
+        .anim-shake { animation: shake 0.4s; }
+        .anim-bounce { animation: bounce 1s; }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+
+    <!-- PANTALLA 1: INTRODUCCIÓN -->
+    <div id="screen-intro" class="screen active">
+        <div class="emoji-avatar">👩‍⚕️</div>
+        <h1 class="big-title">La Clínica de los Sentimientos</h1>
+        <p class="intro-text">
+            ¡Hola, Doctor! Soy la Directora.<br><br>
+            Tenemos dos herramientas:<br>
+            <b>🤖 D.A.T.O.S.</b> sabe hechos matemáticos.<br>
+            <b>❤️ EMPATÍA</b> cura el corazón.<br><br>
+            ¡Elige sabiamente!
+        </p>
+        <button class="start-btn" onclick="startGame()">¡Comenzar Turno!</button>
+    </div>
+
+    <!-- PANTALLA 2: JUEGO PRINCIPAL -->
+    <div id="screen-game" class="screen">
+        <!-- Zona Superior: Pensamiento -->
+        <div class="thought-bubble" id="problem-text">
+            ...
+        </div>
+
+        <!-- Zona Central: Paciente -->
+        <div class="patient-zone">
+            <div class="emoji-avatar" id="patient-emoji">😐</div>
+            <div class="patient-name" id="patient-name">Nombre</div>
+            
+            <!-- Caja de Feedback -->
+            <div id="feedback-box">
+                <strong id="feedback-source">Fuente:</strong> <span id="feedback-text">Mensaje...</span>
+            </div>
+        </div>
+
+        <!-- Zona Inferior: Maletín -->
+        <div class="doctor-bag">
+            <div class="tools-container" id="tools-wrapper">
+                <button class="tool-btn btn-datos" onclick="handleChoice('DATOS')">
+                    <span class="btn-icon">🤖</span>
+                    D.A.T.O.S.
+                </button>
+                <button class="tool-btn btn-heart" onclick="handleChoice('EMPATIA')">
+                    <span class="btn-icon">❤️</span>
+                    EMPATÍA
+                </button>
+            </div>
+
+            <!-- Botones de navegación (Siguiente/Reintentar) -->
+            <button id="btn-next" class="action-btn btn-next" onclick="nextPatient()">Siguiente Paciente ➡️</button>
+            <button id="btn-retry" class="action-btn btn-retry" onclick="retryPatient()">Intentar de nuevo 🔄</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA 3: VICTORIA -->
+    <div id="screen-victory" class="screen">
+        <div class="diploma">
+            <div class="emoji-avatar">🎓</div>
+            <h1 class="big-title">¡DOCTOR DEL CORAZÓN!</h1>
+            <p class="intro-text">
+                Has completado tu turno.<br>
+                Sabes perfectamente cuándo usar tu cabeza 🧠 y cuándo usar tu corazón ❤️.
+            </p>
+        </div>
+        <button class="start-btn" onclick="location.reload()">Jugar otra vez</button>
+    </div>
+
+</div>
+
+<script>
+    /* --- DATOS DE LOS CASOS --- */
+    const cases = [
+        {
+            id: 1,
+            name: "Leo",
+            startEmoji: "😟",
+            startText: "¡Ayuda! ¿Cuántos lados tiene un hexágono? ¡No puedo hacer mi tarea!",
+            correctTool: "DATOS",
+            winEmoji: "😄",
+            winFeedback: "Un hexágono tiene exactamente 6 lados.",
+            winSource: "D.A.T.O.S:",
+            winContext: "Leo: ¡Gracias! ¡Ahora puedo terminar!",
+            failEmoji: "😐",
+            failFeedback: "(Le das un abrazo...)",
+            failSource: "TÚ:",
+            failContext: "Leo sigue sin saber la respuesta y mira su cuaderno confundido."
+        },
+        {
+            id: 2,
+            name: "Ana",
+            startEmoji: "😢",
+            startText: "Perdí el collar que me regaló mi abuela... estoy muy triste.",
+            correctTool: "EMPATIA",
+            winEmoji: "😌",
+            winFeedback: "Lo siento mucho, Ana. Perder algo especial duele mucho.",
+            winSource: "TÚ:",
+            winContext: "Ana se seca las lágrimas. Se siente comprendida.",
+            failEmoji: "😭",
+            failFeedback: "Objeto 'collar' reemplazable. Costo estimado: $10.",
+            failSource: "D.A.T.O.S:",
+            failContext: "Ana llora más fuerte porque el collar era único."
+        },
+        {
+            id: 3,
+            name: "Marco",
+            startEmoji: "😰",
+            startText: "Mañana es el partido final. Tengo miedo de fallar y que se burlen.",
+            correctTool: "EMPATIA",
+            winEmoji: "😅",
+            winFeedback: "Es normal tener miedo. Ganar no importa tanto como divertirse. Te apoyamos.",
+            winSource: "DIRECTORA:",
+            winContext: "Marco respira hondo y sonríe aliviado.",
+            failEmoji: "😱",
+            failFeedback: "Cálculo de probabilidad de perder: 50%. Probabilidad de burla: ALTA.",
+            failSource: "D.A.T.O.S:",
+            failContext: "Marco entra en pánico total."
+        }
+    ];
+
+    /* --- ESTADO DEL JUEGO --- */
+    let currentCaseIndex = 0;
+    let audioCtx = null;
+
+    /* --- REFERENCIAS DOM --- */
+    const screens = {
+        intro: document.getElementById('screen-intro'),
+        game: document.getElementById('screen-game'),
+        victory: document.getElementById('screen-victory')
+    };
+
+    const ui = {
+        bubble: document.getElementById('problem-text'),
+        emoji: document.getElementById('patient-emoji'),
+        name: document.getElementById('patient-name'),
+        feedbackBox: document.getElementById('feedback-box'),
+        feedbackSource: document.getElementById('feedback-source'),
+        feedbackText: document.getElementById('feedback-text'),
+        toolsWrapper: document.getElementById('tools-wrapper'),
+        btnNext: document.getElementById('btn-next'),
+        btnRetry: document.getElementById('btn-retry')
+    };
+
+    /* --- SISTEMA DE AUDIO (Web Audio API) --- */
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    // Sonido: Robot / Error (Onda cuadrada, disonante)
+    function playRobotGlitch() {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+        
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    // Sonido: Acierto / Datos Correctos (Teletipo suave)
+    function playRobotSuccess() {
+        initAudio();
+        const now = audioCtx.currentTime;
+        [440, 554, 659].forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.05, now + i*0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.1 + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i*0.1);
+            osc.stop(now + i*0.1 + 0.1);
+        });
+    }
+
+    // Sonido: Corazón / Empatía (Arpa suave)
+    function playHeartSound() {
+        initAudio();
+        const now = audioCtx.currentTime;
+        // Acorde Mayor suave
+        [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.1, now + i*0.05 + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.05 + 1.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i*0.05);
+            osc.stop(now + i*0.05 + 2);
+        });
+    }
+
+    // Sonido: Victoria Final (Fanfarria)
+    function playWinSound() {
+        initAudio();
+        const now = audioCtx.currentTime;
+        const melody = [523.25, 659.25, 783.99, 1046.50];
+        melody.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, now + i*0.15);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.15 + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i*0.15);
+            osc.stop(now + i*0.15 + 0.6);
+        });
+    }
+
+    /* --- LÓGICA DEL JUEGO --- */
+
+    function switchScreen(screenName) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[screenName].classList.add('active');
+    }
+
+    function startGame() {
+        initAudio();
+        currentCaseIndex = 0;
+        loadCase();
+        switchScreen('game');
+    }
+
+    function loadCase() {
+        const data = cases[currentCaseIndex];
+        
+        // Reset UI
+        ui.emoji.textContent = data.startEmoji;
+        ui.emoji.className = "emoji-avatar"; // Reset animations
+        ui.name.textContent = data.name;
+        ui.bubble.textContent = data.startText;
+        
+        // Ocultar feedback y mostrar herramientas
+        ui.feedbackBox.style.display = 'none';
+        ui.toolsWrapper.style.display = 'flex';
+        ui.btnNext.style.display = 'none';
+        ui.btnRetry.style.display = 'none';
+    }
+
+    function handleChoice(choice) {
+        const data = cases[currentCaseIndex];
+        const isCorrect = choice === data.correctTool;
+
+        // Ocultar herramientas para que lea el feedback
+        ui.toolsWrapper.style.display = 'none';
+        ui.feedbackBox.style.display = 'block';
+
+        if (isCorrect) {
+            // LÓGICA DE ACIERTO
+            if (choice === 'DATOS') playRobotSuccess();
+            else playHeartSound();
+
+            ui.emoji.textContent = data.winEmoji;
+            ui.emoji.classList.add('anim-bounce');
+            
+            ui.feedbackBox.style.borderLeftColor = "#AED581"; // Verde
+            ui.feedbackBox.style.backgroundColor = "#F1F8E9";
+            ui.feedbackSource.textContent = data.winSource;
+            ui.feedbackSource.style.color = "#558B2F";
+            ui.feedbackText.innerHTML = `${data.winFeedback}<br><br><i>${data.winContext}</i>`;
+            
+            ui.btnNext.style.display = 'block';
+
+        } else {
+            // LÓGICA DE FALLO
+            playRobotGlitch();
+            
+            ui.emoji.textContent = data.failEmoji;
+            ui.emoji.classList.add('anim-shake');
+
+            ui.feedbackBox.style.borderLeftColor = "#FF8A65"; // Naranja/Rojo
+            ui.feedbackBox.style.backgroundColor = "#FBE9E7";
+            ui.feedbackSource.textContent = data.failSource;
+            ui.feedbackSource.style.color = "#D84315";
+            ui.feedbackText.innerHTML = `${data.failFeedback}<br><br><i>${data.failContext}</i>`;
+            
+            ui.btnRetry.style.display = 'block';
+        }
+    }
+
+    function retryPatient() {
+        // Simplemente recarga la visualización del caso actual
+        ui.emoji.classList.remove('anim-shake');
+        loadCase();
+    }
+
+    function nextPatient() {
+        currentCaseIndex++;
+        if (currentCaseIndex < cases.length) {
+            loadCase();
+        } else {
+            playWinSound();
+            switchScreen('victory');
+        }
+    }
+
+</script>
+</body>
+</html>
